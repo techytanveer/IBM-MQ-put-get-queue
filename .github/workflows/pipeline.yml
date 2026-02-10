@@ -21,23 +21,24 @@ jobs:
       - name: Compile Producer and Consumer
         run: |
 
-          # 1. Install the compiler
-          microdnf install -y gcc-c++
+          # 1. Install compiler and downloader
+          microdnf install -y gcc-c++ curl
           
-          # 2. IBM MQ containers often keep headers in this specific location 
-          # but they aren't in the standard PATH.
-          export MQ_INC_PATH=/opt/mqm/samp/cpp/include
+          # 2. Create a local include directory and download essential MQ headers
+          mkdir -p ./include
+          BASE_URL="https://raw.githubusercontent.com/ibm-messaging/mq-c-sample/master/include"
           
-          # 3. If that doesn't exist, we'll check the standard SDK location
-          if [ ! -d "$MQ_INC_PATH" ]; then
-            export MQ_INC_PATH=/opt/mqm/inc
-          fi
-
-          echo "Using Include Path: $MQ_INC_PATH"
+          # We need these three primary headers for standard MQ development
+          curl -sL "$BASE_URL/cmqc.h" -o ./include/cmqc.h
+          curl -sL "$BASE_URL/cmqxc.h" -o ./include/cmqxc.h
+          curl -sL "$BASE_URL/cmqzc.h" -o ./include/cmqzc.h
           
-          # 4. Compile with shared library linking
-          g++ -I$MQ_INC_PATH main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
-          g++ -I$MQ_INC_PATH get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
+          echo "Headers downloaded to ./include"
+          
+          # 3. Compile pointing to our new local include folder
+          # We still use the library path /opt/mqm/lib64 which IS in the container
+          g++ -I./include main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
+          g++ -I./include get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 
       - name: Setup and Run Functional Test
         run: |
