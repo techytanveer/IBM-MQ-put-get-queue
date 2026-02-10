@@ -12,30 +12,38 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Install IBM MQ Redistributable Client
+      - name: Install Dependencies
         run: |
-          # We use the Redistributable client for CI because it doesn't require interactive license prompts
-          curl -LO https://public.dhe.ibm.com/ibmdl/export/pub/software/server/ibm-mq/mqad94/9.4.0.5-IBM-MQ-Redist-LinuxX64.tar.gz
-          sudo mkdir -p /opt/mqm
-          sudo tar -zxvf 9.4.0.5-IBM-MQ-Redist-LinuxX64.tar.gz -C /opt/mqm
-          # Accept license non-interactively
-          sudo /opt/mqm/bin/mqlicense.sh -accept
+          sudo apt-get update
+          sudo apt-get install -y libutil1
+
+      - name: Download and Install IBM MQ Client
+        run: |
+          # Using the official 9.4 Debian packages from IBM's public repo
+          curl -LO https://public.dhe.ibm.com/ibmdl/export/pub/software/server/ibm-mq/mqad94/9.4.0.5-IBM-MQ-Install-Java-NoInstall-LinuxX64.tar.gz
+          tar -zxvf 9.4.0.5-IBM-MQ-Install-Java-NoInstall-LinuxX64.tar.gz
+          cd MQServer
+          sudo ./mqlicense.sh -accept
+          # Install the specific debs required for C++ development
+          sudo dpkg -i ibmmq-runtime_9.4.0.5_amd64.deb ibmmq-client_9.4.0.5_amd64.deb ibmmq-sdk_9.4.0.5_amd64.deb
 
       - name: Compile
         run: |
-          # Point to the freshly installed /opt/mqm
+          # Standard paths for debian installation
           g++ -I/opt/mqm/inc main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
           g++ -I/opt/mqm/inc get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 
       - name: Setup and Run Functional Test
         run: |
+          # Add the MQ binaries to path for the crtmqm/runmqsc tools
           export PATH=$PATH:/opt/mqm/bin
           export LD_LIBRARY_PATH=/opt/mqm/lib64
           
-          # Create and start QM
-          crtmqm QM_CI
-          strmqm QM_CI
-          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM_CI
+          # We need to run these as a user in the mqm group, 
+          # but on GitHub Runners, sudo is often easier for quick tests
+          sudo crtmqm QM_CI
+          sudo strmqm QM_CI
+          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | sudo runmqsc QM_CI
           
           # Run the test
           ./ibmMQ
