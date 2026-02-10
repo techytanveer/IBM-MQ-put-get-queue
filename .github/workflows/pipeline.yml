@@ -34,24 +34,31 @@ jobs:
 
       - name: Setup and Run Functional Test
         run: |
-          # Set the library path so the binary can find MQ libs
+
           export LD_LIBRARY_PATH=/opt/mqm/lib64
           
-          # 1. Create and Start the Queue Manager
-          crtmqm QM_CI
-          strmqm QM_CI
+          # 1. Create and Start the Queue Manager (Matching your C++ name: QM1)
+          crtmqm QM1
+          strmqm QM1
           
-          # 2. Configure the Queue
-          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM_CI
+          # 2. Configure the Queue and Disable Security for CI
+          # We disable CONNAUTH so the 'root' user can connect without a password
+          echo "ALTER QMGR CHLAUTH(DISABLED) CONNAUTH(' ')" | runmqsc QM1
+          echo "REFRESH QMGR TYPE(CONFIGEV)" | runmqsc QM1
+          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM1
           
           # 3. Run the demo programs
+          # Note: If your code uses 'TEST.QUEUE', this will work. 
+          # If it uses a different queue name, update 'TEST.QUEUE' above.
           ./ibmMQ
+          
+          # 4. Capture result and verify
           RESULT=$(./mq_get)
-          echo "$RESULT"
+          echo "Program Output: $RESULT"
           
           if [[ "$RESULT" == *"Message Received"* ]]; then
-            echo "CI Test Passed!"
+             echo "CI Test Passed!"
           else
-            echo "CI Test Failed!"
-            exit 1
+             echo "CI Test Failed!"
+             exit 1
           fi
