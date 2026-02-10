@@ -22,10 +22,16 @@ jobs:
         run: |
           # In this container, g++ isn't always pre-installed. 
           # We'll install it and compile.
-          microdnf install -y gcc-c++ 
+
+          microdnf install -y gcc-c++ findutils
           
-          g++ -I/opt/mqm/inc main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
-          g++ -I/opt/mqm/inc get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
+          # Let's find exactly where cmqc.h is to be 100% sure
+          MQ_INC_PATH=$(find /opt/mqm -name cmqc.h | xargs dirname)
+          echo "Found headers at: $MQ_INC_PATH"
+          
+          # Compile using the discovered path
+          g++ -I$MQ_INC_PATH main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
+          g++ -I$MQ_INC_PATH get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 
       - name: Setup and Run Functional Test
         run: |
