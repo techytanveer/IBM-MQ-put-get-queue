@@ -20,16 +20,16 @@ jobs:
 
       - name: Compile Producer and Consumer
         run: |
-          # In this container, g++ isn't always pre-installed. 
-          # We'll install it and compile.
 
-          microdnf install -y gcc-c++ findutils
+          # 1. Install C++ compiler and the IBM MQ SDK/Development headers
+          # The package name in the UBI-based MQ image is ibmmq-sdk
+          microdnf install -y gcc-c++ ibmmq-sdk
           
-          # Let's find exactly where cmqc.h is to be 100% sure
-          MQ_INC_PATH=$(find /opt/mqm -name cmqc.h | xargs dirname)
-          echo "Found headers at: $MQ_INC_PATH"
+          # 2. Verify headers exist and set path
+          # In these images, they land in /opt/mqm/inc
+          export MQ_INC_PATH=/opt/mqm/inc
           
-          # Compile using the discovered path
+          # 3. Compile
           g++ -I$MQ_INC_PATH main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
           g++ -I$MQ_INC_PATH get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 
