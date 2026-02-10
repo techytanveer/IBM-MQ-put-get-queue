@@ -7,31 +7,30 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    # This image contains the full MQ installation (binaries, headers, and libs)
     container: 
       image: icr.io/ibm-messaging/mq:9.4.1.0-r1
+      env:
+        # This is the standard way to accept the license in IBM MQ containers
+        LICENSE: accept
       options: --user root
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Fix Pathing and Environment
-        run: |
-          # IBM MQ container puts headers here
-          ln -s /opt/mqm/inc /usr/local/include/ibm-mq
-          # Accept the license for the tools
-          /opt/mqm/bin/mqlicense.sh -accept
-
       - name: Compile Producer and Consumer
         run: |
+          # In this container, g++ isn't always pre-installed. 
+          # We'll install it and compile.
+          microdnf install -y gcc-c++ 
+          
           g++ -I/opt/mqm/inc main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
           g++ -I/opt/mqm/inc get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 
       - name: Setup and Run Functional Test
         run: |
-          export PATH=$PATH:/opt/mqm/bin
-          export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/mqm/lib64
+          # Set the library path so the binary can find MQ libs
+          export LD_LIBRARY_PATH=/opt/mqm/lib64
           
           # 1. Create and Start the Queue Manager
           crtmqm QM_CI
@@ -40,8 +39,7 @@ jobs:
           # 2. Configure the Queue
           echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM_CI
           
-          # 3. Give permissions (since the container runs as root/mqm, this is easier)
-          # We check the connection and put/get
+          # 3. Run the demo programs
           ./ibmMQ
           RESULT=$(./mq_get)
           echo "$RESULT"
