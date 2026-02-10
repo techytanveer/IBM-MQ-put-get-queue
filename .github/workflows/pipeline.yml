@@ -3,57 +3,48 @@ name: IBM MQ C++ CI Pipeline
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     
-    # We use the MQ container to ensure we have all headers/libs
-    container: 
-      image: icr.io/ibm-messaging/mq:9.4.0.5-r1
-      options: --user root
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Prepare Environment
+      - name: Install IBM MQ Redistributable Client
         run: |
-          # The container starts in /opt/mqm, we need to ensure our workspace is ready
-          # Accept the license for the container tools
-          /opt/mqm/bin/mqlicense.sh -accept
+          # We use the Redistributable client for CI because it doesn't require interactive license prompts
+          curl -LO https://public.dhe.ibm.com/ibmdl/export/pub/software/server/ibm-mq/mqad94/9.4.0.5-IBM-MQ-Redist-LinuxX64.tar.gz
+          sudo mkdir -p /opt/mqm
+          sudo tar -zxvf 9.4.0.5-IBM-MQ-Redist-LinuxX64.tar.gz -C /opt/mqm
+          # Accept license non-interactively
+          sudo /opt/mqm/bin/mqlicense.sh -accept
 
-      - name: Compile Producer and Consumer
+      - name: Compile
         run: |
-          # Using the exact flags we used on your local Ubuntu machine
+          # Point to the freshly installed /opt/mqm
           g++ -I/opt/mqm/inc main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
           g++ -I/opt/mqm/inc get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 
-      - name: Functional Test
+      - name: Setup and Run Functional Test
         run: |
-          # 1. Create and Start a temporary Queue Manager
-          crtmqm QM_TEST
-          strmqm QM_TEST
-          
-          # 2. Define the Queue
-          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM_TEST
-          
-          # 3. Set Library Path and Run
+          export PATH=$PATH:/opt/mqm/bin
           export LD_LIBRARY_PATH=/opt/mqm/lib64
           
-          echo "Testing Producer..."
+          # Create and start QM
+          crtmqm QM_CI
+          strmqm QM_CI
+          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM_CI
+          
+          # Run the test
           ./ibmMQ
-          
-          echo "Testing Consumer..."
           RESULT=$(./mq_get)
-          echo $RESULT
+          echo "$RESULT"
           
-          # 4. Validation
           if [[ "$RESULT" == *"Message Received"* ]]; then
-            echo "Pipeline Success: Message passed through MQ!"
+            echo "CI Test Passed!"
           else
-            echo "Pipeline Failed: Message not retrieved."
+            echo "CI Test Failed!"
             exit 1
           fi
