@@ -21,22 +21,14 @@ jobs:
       - name: Compile Producer and Consumer
         run: |
 
-          # 1. Install compiler and downloader (wget is safer here)
-          microdnf install -y gcc-c++ wget
+          # 1. Install ONLY the compiler. No more curl/wget needed!
+          microdnf install -y gcc-c++
           
-          # 2. Create local include directory
-          mkdir -p ./include
-          BASE_URL="https://raw.githubusercontent.com/ibm-messaging/mq-c-sample/master/include"
+          # 2. Verify the headers exist (sanity check)
+          echo "Checking for vendored headers..."
+          ls -R ./include
           
-          # 3. Download headers using wget
-          wget -q "$BASE_URL/cmqc.h" -O ./include/cmqc.h
-          wget -q "$BASE_URL/cmqxc.h" -O ./include/cmqxc.h
-          wget -q "$BASE_URL/cmqzc.h" -O ./include/cmqzc.h
-          
-          echo "Headers verified in ./include:"
-          ls ./include
-          
-          # 4. Compile
+          # 3. Compile using the local headers
           g++ -I./include main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
           g++ -I./include get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 
