@@ -50,7 +50,7 @@ jobs:
           echo "DISPLAY QLOCAL('TEST.QUEUE') CURDEPTH" | runmqsc QM1 | grep 'CURDEPTH(1)'
 
           # 4. Run consumer
-          ./m_get > consumer_output.txt
+          ./mq_get > consumer_output.txt
 
           # 5. Check Queue Depth again (Should be 0 after commit)
           echo "DISPLAY QLOCAL('TEST.QUEUE') CURDEPTH" | runmqsc QM1 | grep 'CURDEPTH(0)'
