@@ -24,10 +24,16 @@ int main() {
         MQLONG msgLen;               // Actual length received
 
         // Wait up to 3 seconds for a message if it's not there
-        gmo.Options = MQGMO_WAIT;
-        gmo.WaitInterval = 3000;
+        //gmo.Options = MQGMO_WAIT;
+        gmo.Options = MQGMO_WAIT | MQGMO_SYNCPOINT; // Wait for message & use transactions
+        gmo.WaitInterval = 15000; // Wait for 15,000 milliseconds (15 seconds)
 
         MQGET(hConn, hObj, &md, &gmo, sizeof(buffer)-1, buffer, &msgLen, &compCode, &reason);
+
+	//MQGET(hConn, hObj, &md, &gmo, bufferLength, buffer, &messLen, &compCode, &reason);
+	if (reason == MQRC_NO_MSG_AVAILABLE) {
+            printf("Timed out after 15 seconds. No message arrived.\n");
+        }
 
         if (compCode == MQCC_OK) {
             buffer[msgLen] = '\0'; // Null terminate the string

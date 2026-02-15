@@ -37,28 +37,31 @@ jobs:
 
           export LD_LIBRARY_PATH=/opt/mqm/lib64
           
-          # 1. Create and Start the Queue Manager (Matching your C++ name: QM1)
-          crtmqm QM1
-          strmqm QM1
-          
-          # 2. Configure the Queue and Disable Security for CI
-          # We disable CONNAUTH so the 'root' user can connect without a password
+          # 1. Setup MQ
+          crtmqm QM1 && strmqm QM1
           echo "ALTER QMGR CHLAUTH(DISABLED) CONNAUTH(' ')" | runmqsc QM1
           echo "REFRESH QMGR TYPE(CONFIGEV)" | runmqsc QM1
           echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM1
           
-          # 3. Run the demo programs
-          # Note: If your code uses 'TEST.QUEUE', this will work. 
-          # If it uses a different queue name, update 'TEST.QUEUE' above.
+          # 2. Start Consumer in the BACKGROUND
+          # It will now wait up to 15 seconds for a message
+          ./mq_get > consumer_output.txt &
+          CONSUMER_PID=$!
+          
+          # 3. Wait a moment, then run the Producer
+          sleep 2
           ./ibmMQ
           
-          # 4. Capture result and verify
-          RESULT=$(./mq_get)
-          echo "Program Output: $RESULT"
+          # 4. Wait for the consumer process to finish naturally
+          wait $CONSUMER_PID
           
+          # 5. Verify results
+          RESULT=$(cat consumer_output.txt)
+          echo "Final Consumer Output: $RESULT"
+
           if [[ "$RESULT" == *"Message Received"* ]]; then
-             echo "CI Test Passed!"
+             echo "Async Test Passed!"
           else
-             echo "CI Test Failed!"
+             echo "Async Test Failed!"
              exit 1
           fi
