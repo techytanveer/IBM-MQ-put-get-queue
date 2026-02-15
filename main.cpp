@@ -26,12 +26,14 @@ int main() {
     if (compCode == MQCC_OK) {
         // 3. Put a Message
         MQPMO putMsgOpts = {MQPMO_DEFAULT};
+	putMsgOpts.Options = MQPMO_SYNCPOINT; 
         MQMD msgDesc = {MQMD_DEFAULT};
         char messageBody[] = "Hello IBM MQ from Ubuntu 24.04!";
         
         MQPUT(hConn, hObj, &msgDesc, &putMsgOpts, (MQLONG)strlen(messageBody), messageBody, &compCode, &reason);
         
         if (compCode == MQCC_OK) {
+            MQCMIT(hConn, &compCode, &reason); // confirm the put
             std::cout << "Successfully put message to TEST.QUEUE!" << std::endl;
         }
         

@@ -43,19 +43,22 @@ jobs:
           echo "REFRESH QMGR TYPE(CONFIGEV)" | runmqsc QM1
           echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM1
           
-          # 2. Start Consumer in the BACKGROUND
-          # It will now wait up to 15 seconds for a message
-          ./mq_get > consumer_output.txt &
-          CONSUMER_PID=$!
-          
-          # 3. Wait a moment, then run the Producer
-          sleep 2
+          # 2. Run the Producer
           ./ibmMQ
-          
-          # 4. Wait for the consumer process to finish naturally
+
+          # 3. Check Queue Depth (Should be 1)
+          echo "DISPLAY QLOCAL('TEST.QUEUE') CURDEPTH" | runmqsc QM1 | grep 'CURDEPTH(1)'
+
+          # 4. Run consumer
+          ./m_get > consumer_output.txt
+
+          # 5. Check Queue Depth again (Should be 0 after commit)
+          echo "DISPLAY QLOCAL('TEST.QUEUE') CURDEPTH" | runmqsc QM1 | grep 'CURDEPTH(0)'
+
+          # 6. Wait for the consumer process to finish naturally
           wait $CONSUMER_PID
           
-          # 5. Verify results
+          # 7. Verify results
           RESULT=$(cat consumer_output.txt)
           echo "Final Consumer Output: $RESULT"
 
