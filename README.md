@@ -93,7 +93,7 @@ Executes a functional test to verify the Put/Get cycle.
 ## 🔄 Change Management
 
 1. **proof-of-concept.tar** - CI/CD pipeline is fully functional: it compiles against vendored headers and successfully executes a "Put" and "Get" against a live (containerized) IBM MQ instance.
-2. **In Progress**- Moving from "one-shot" execution to Asynchronous Waiting. Instead of the consumer checking the queue and immediately quitting if it's empty, we’ll tell it to "hang on the line" for a message to arrive
+2. **async-waiting-feature.tar**- Moving from "one-shot" execution to Asynchronous Waiting. Instead of the consumer checking the queue and immediately quitting if it's empty, we’ll tell it to "hang on the line" for a message to arrive
 ```
 ~/ibmMQ$ ./mq_get
 Timed out after 15 seconds. No message arrived.
