@@ -104,4 +104,4 @@ Successfully put message to TEST.QUEUE!
 Message Received: Hello IBM MQ from Ubuntu 24.04!
 ~/ibmMQ$
 ```
-4. **In Progress** -  
+4. **In Progress** - Syncpointing feature  
