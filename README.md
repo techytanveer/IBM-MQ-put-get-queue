@@ -1,6 +1,6 @@
 [![IBM MQ C++ CI Pipeline](https://github.com/techytanveer/IBM-MQ-put-get-queue/actions/workflows/pipeline.yml/badge.svg)](https://github.com/techytanveer/IBM-MQ-put-get-queue/actions/workflows/pipeline.yml)
 
-# IBM MQ C++ Put/Get Queue Demo
+# IBM MQ C++ Put/Get Queue
 
 A high-performance C++ implementation for interacting with IBM MQ. This project demonstrates how to connect to a Queue Manager, put a message into a local queue, and retrieve it using a separate consumer.
 
@@ -31,6 +31,21 @@ To build and run this locally, you need:
 
 ---
 
+## ⚙️ Environment Setup (Local)
+
+```
+Download the Ubuntu .deb tarball from the IBM MQ download page.
+tar -zxvf ibm-mq-advanced-for-developers-9.4.x.tar.gz
+cd MQServer
+sudo ./mqlicense.sh -text_only
+# Add the directory to apt to handle dependencies automatically
+sudo apt install ./ibmmq-runtime_*.deb ./ibmmq-server_*.deb ./ibmmq-sdk_*.deb ./ibmmq-client_*.deb
+sudo usermod -aG mqm $USER
+crtmqm QM1
+strmqm QM1
+echo "DEFINE QLOCAL(DEV.QUEUE.1)" | runmqsc QM1
+```
+
 ## 🔨 Build Instructions
 
 Use the following commands to compile the applications. We include the `./include` directory to ensure the compiler finds the necessary MQ headers.
@@ -41,11 +56,6 @@ g++ -I./include main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
 
 # Compile Consumer
 g++ -I./include get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
-```
-## 🏃 Local Compilation
-```
-g++ -I/opt/mqm/inc main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
-g++ -I/opt/mqm/inc get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 ```
 
 ## 🏃 Local Execution
@@ -104,4 +114,6 @@ Successfully put message to TEST.QUEUE!
 Message Received: Hello IBM MQ from Ubuntu 24.04!
 ~/ibmMQ$
 ```
-4. **In Progress** - Syncpointing feature  
+4. **syncpointing-feature.tar** -  With Syncpointing (Transactions), the message is only truly removed from the queue once the code explicitly says "I'm done" (`MQCMIT`). We must move from "unreliable messaging" to Guaranteed Delivery.
+5. **MQBACK** - rollback (coding...)
+
