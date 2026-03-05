@@ -115,5 +115,6 @@ Message Received: Hello IBM MQ from Ubuntu 24.04!
 ~/ibmMQ$
 ```
 4. **syncpointing-feature.tar** -  With Syncpointing (Transactions), the message is only truly removed from the queue once the code explicitly says "I'm done" (`MQCMIT`). We must move from "unreliable messaging" to Guaranteed Delivery.
-5. **MQBACK** - rollback (coding...)
+5. **Latency Tracker & Timestamp - *By comparing those MQ timestamps to the current system time when the message is received, we can calculate exactly how many milliseconds the message spent traveling through the provider.*
+6. **MQBACK** - rollback (coding...)
 

@@ -1,9 +1,6 @@
 #include <iostream>
 #include <string.h>
 #include <cmqc.h> // Standard MQ Header
-#include <chrono>
-#include <iomanip>
-#include <sstream>
 
 int main() {
     MQHCONN hConn;      // Connection handle
@@ -26,28 +23,15 @@ int main() {
     MQLONG openOptions = MQOO_OUTPUT | MQOO_FAIL_IF_QUIESCING;
 
     MQOPEN(hConn, &objDesc, openOptions, &hObj, &compCode, &reason);
-    
     if (compCode == MQCC_OK) {
         // 3. Put a Message
         MQPMO putMsgOpts = {MQPMO_DEFAULT};
-	putMsgOpts.Options = MQPMO_SYNCPOINT; 
         MQMD msgDesc = {MQMD_DEFAULT};
         char messageBody[] = "Hello IBM MQ from Ubuntu 24.04!";
-
-	// 4. Timestamp
-        auto now = std::chrono::system_clock::now();
-        auto in_time_t = std::chrono::system_clock::to_time_t(now);
-
-        std::stringstream ss;
-        ss << "Msg #" << " | Sent at: " << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %X");
-        std::string messageText = ss.str();
-
-	// PUT
         
         MQPUT(hConn, hObj, &msgDesc, &putMsgOpts, (MQLONG)strlen(messageBody), messageBody, &compCode, &reason);
         
         if (compCode == MQCC_OK) {
-            MQCMIT(hConn, &compCode, &reason); // confirm the put
             std::cout << "Successfully put message to TEST.QUEUE!" << std::endl;
         }
         

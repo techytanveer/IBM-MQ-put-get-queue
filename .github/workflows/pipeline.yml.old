@@ -1,0 +1,59 @@
+name: IBM MQ C++ CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    # We use the MQ container to ensure we have all headers/libs
+    container: 
+      image: icr.io/ibm-messaging/mq:9.4.0.5-r1
+      options: --user root
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Prepare Environment
+        run: |
+          # The container starts in /opt/mqm, we need to ensure our workspace is ready
+          # Accept the license for the container tools
+          /opt/mqm/bin/mqlicense.sh -accept
+
+      - name: Compile Producer and Consumer
+        run: |
+          # Using the exact flags we used on your local Ubuntu machine
+          g++ -I/opt/mqm/inc main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
+          g++ -I/opt/mqm/inc get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
+
+      - name: Functional Test
+        run: |
+          # 1. Create and Start a temporary Queue Manager
+          crtmqm QM_TEST
+          strmqm QM_TEST
+          
+          # 2. Define the Queue
+          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM_TEST
+          
+          # 3. Set Library Path and Run
+          export LD_LIBRARY_PATH=/opt/mqm/lib64
+          
+          echo "Testing Producer..."
+          ./ibmMQ
+          
+          echo "Testing Consumer..."
+          RESULT=$(./mq_get)
+          echo $RESULT
+          
+          # 4. Validation
+          if [[ "$RESULT" == *"Message Received"* ]]; then
+            echo "Pipeline Success: Message passed through MQ!"
+          else
+            echo "Pipeline Failed: Message not retrieved."
+            exit 1
+          fi

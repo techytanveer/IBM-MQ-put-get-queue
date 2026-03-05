@@ -41,3 +41,4 @@ This document outlines the evolutionary path of the IBM MQ C++ Put/Get project. 
 * [x] GitHub Actions CI/CD with Containerized IBM MQ.
 * [x] Asynchronous Waiting (`MQGMO_WAIT`).
 * [x] Transactional Integrity (Syncpointing & `MQCMIT`).
+* [x] Latency and Timestamp (the `MQMD` header).

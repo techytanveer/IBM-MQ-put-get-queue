@@ -49,6 +49,7 @@ int main() {
         if (compCode == MQCC_OK) {
             MQCMIT(hConn, &compCode, &reason); // confirm the put
             std::cout << "Successfully put message to TEST.QUEUE!" << std::endl;
+	    std::cout << "Sent: " << messageText.c_str() << std::endl; // Timestamp
         }
         
         // 4. Close the Queue

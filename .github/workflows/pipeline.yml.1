@@ -1,0 +1,64 @@
+name: IBM MQ C++ CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    container: 
+      image: icr.io/ibm-messaging/mq:9.4.1.0-r1
+      env:
+        # This is the standard way to accept the license in IBM MQ containers
+        LICENSE: accept
+      options: --user root
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Compile Producer and Consumer
+        run: |
+
+          # 1. Install ONLY the compiler. No more curl/wget needed!
+          microdnf install -y gcc-c++
+          
+          # 2. Verify the headers exist (sanity check)
+          echo "Checking for vendored headers..."
+          ls -R ./include
+          
+          # 3. Compile using the local headers
+          g++ -I./include main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
+          g++ -I./include get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
+
+      - name: Setup and Run Functional Test
+        run: |
+
+          export LD_LIBRARY_PATH=/opt/mqm/lib64
+          
+          # 1. Create and Start the Queue Manager (Matching your C++ name: QM1)
+          crtmqm QM1
+          strmqm QM1
+          
+          # 2. Configure the Queue and Disable Security for CI
+          # We disable CONNAUTH so the 'root' user can connect without a password
+          echo "ALTER QMGR CHLAUTH(DISABLED) CONNAUTH(' ')" | runmqsc QM1
+          echo "REFRESH QMGR TYPE(CONFIGEV)" | runmqsc QM1
+          echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM1
+          
+          # 3. Run the demo programs
+          # Note: If your code uses 'TEST.QUEUE', this will work. 
+          # If it uses a different queue name, update 'TEST.QUEUE' above.
+          ./ibmMQ
+          
+          # 4. Capture result and verify
+          RESULT=$(./mq_get)
+          echo "Program Output: $RESULT"
+          
+          if [[ "$RESULT" == *"Message Received"* ]]; then
+             echo "CI Test Passed!"
+          else
+             echo "CI Test Failed!"
+             exit 1
+          fi
