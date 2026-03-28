@@ -105,8 +105,8 @@ Executes a functional test to verify the Put/Get cycle.
 
 ## What I've achieved:
 
-1. **proof-of-concept.tar** - CI/CD pipeline is fully functional: it compiles against vendored headers and successfully executes a "Put" and "Get" against a live (containerized) IBM MQ instance.
-2. **async-waiting-feature.tar**- Moving from "one-shot" execution to Asynchronous Waiting. Instead of the consumer checking the queue and immediately quitting if it's empty, we’ll tell it to "hang on the line" for a message to arrive
+1. **proof-of-concept** - CI/CD pipeline is fully functional: it compiles against vendored headers and successfully executes a "Put" and "Get" against a live (containerized) IBM MQ instance.
+2. **async-waiting-feature**- Moving from "one-shot" execution to Asynchronous Waiting. Instead of the consumer checking the queue and immediately quitting if it's empty, we’ll tell it to "hang on the line" for a message to arrive
 ```
 ~/ibmMQ$ ./mq_get
 Timed out after 15 seconds. No message arrived.
@@ -117,10 +117,10 @@ Successfully put message to TEST.QUEUE!
 Message Received: Hello IBM MQ from Ubuntu 24.04!
 ~/ibmMQ$
 ```
-4. **syncpointing-feature.tar** -  With Syncpointing (Transactions), the message is only truly removed from the queue once the code explicitly says "I'm done" (`MQCMIT`). We must move from "unreliable messaging" to Guaranteed Delivery.
-5. **Latency-timestamp-cal.tar** - By comparing those MQ timestamps to the current system time when the message is received, we can calculate exactly how many milliseconds the message spent traveling through the provider.*
-6. **Resilience (The Poison Message/BackoutCount logic)** - In a production environment, a **Poison Message** is a message that causes the consumer to fail or crash every time it tries to process it. Without resilience logic, the app will get stuck in an infinite loop: **Get -> Fail -> Rollback -> Get (Same Message) -> Fail...** IBM MQ solves this with the `BackoutCount` field in the `MQMD`.
-   6a. **Poison Message Resilience** - Fault Injector Chaos Engineering Tool `mq_poison` to simulate application-level failures
-   6b. **Dead Letter Queue (DLQ) Routing** - The Consumer detects the Poison Message and moves to DEAD.LETTER.QUEUE 
-   6c. **Message Lifecycle Management** - The janitor tool `mq_clear_dlq` detects the poison message and clear the queue
+4. **syncpointing-feature** -  With Syncpointing (Transactions), the message is only truly removed from the queue once the code explicitly says "I'm done" (`MQCMIT`). We must move from "unreliable messaging" to Guaranteed Delivery.
+5. **Latency-timestamp-cal** - By comparing those MQ timestamps to the current system time when the message is received, we can calculate exactly how many milliseconds the message spent traveling through the provider.*
+6. **Resilience** - *(The Poison Message/BackoutCount logic)* In a production environment, a **Poison Message** is a message that causes the consumer to fail or crash every time it tries to process it. Without resilience logic, the app will get stuck in an infinite loop: **Get -> Fail -> Rollback -> Get (Same Message) -> Fail...** IBM MQ solves this with the `BackoutCount` field in the `MQMD`.
+  - 6a. **Poison Message Resilience** - Fault Injector Chaos Engineering Tool `mq_poison` to simulate application-level failures
+  - 6b. **Dead Letter Queue (DLQ) Routing** - The Consumer detects the Poison Message and moves to DEAD.LETTER.QUEUE 
+  - 6c. **Message Lifecycle Management** - The janitor tool `mq_clear_dlq` detects the poison message and clear the queue
 
