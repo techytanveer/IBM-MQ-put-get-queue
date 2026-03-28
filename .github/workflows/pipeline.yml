@@ -31,6 +31,8 @@ jobs:
           # 3. Compile using the local headers
           g++ -I./include main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
           g++ -I./include get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
+          g++ -I./include mq_poison.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_poison
+          g++ -I./include mq_clear_dlq.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_clear_dlq
 
       - name: Setup and Run Functional Test
         run: |
@@ -42,6 +44,7 @@ jobs:
           echo "ALTER QMGR CHLAUTH(DISABLED) CONNAUTH(' ')" | runmqsc QM1
           echo "REFRESH QMGR TYPE(CONFIGEV)" | runmqsc QM1
           echo "DEFINE QLOCAL('TEST.QUEUE') REPLACE" | runmqsc QM1
+          echo "DEFINE QLOCAL('DEV.DEAD.LETTER.QUEUE') REPLACE" | runmqsc QM1
           
           # 2. Run the Producer
           ./ibmMQ
