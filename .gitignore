@@ -1,1 +1,12 @@
-README.md
+# Build directories
+build/
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+#git
+.github/
+.git
