@@ -6,23 +6,25 @@ A high-performance C++ implementation for interacting with IBM MQ. This project 
 
 
 
-## 🚀 Features
+## Features
 * **Producer (`ibmMQ`):** Connects to `QM1` and puts a test message into `TEST.QUEUE`.
 * **Consumer (`mq_get`):** Connects to `QM1` and retrieves the message.
+* **Poison Injector (`mq_poison`):** Inject a poison/failed message into 'TEST.QUEUE`.
+* **DLQ Janitor (`mq_clear_dlq`):** Connects to DLQ, read every message until the queue is empty.
 * **Automated CI/CD:** Integrated with GitHub Actions to compile and test against a live IBM MQ container.
 
 ---
 
-## 🛠 Prerequisites
+## Prerequisites
 
-To build and run this locally, you need:
+To build and run this locally, what is needed:
 1.  **IBM MQ Client/Server:** Installed in `/opt/mqm`.
 2.  **C++ Compiler:** `gcc-c++`.
 3.  **Library Access:** `LD_LIBRARY_PATH` must include the MQ `lib64` directory.
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 * `main.cpp` - The Producer application (Put).
 * `get.cpp` - The Consumer application (Get).
@@ -31,7 +33,7 @@ To build and run this locally, you need:
 
 ---
 
-## ⚙️ Environment Setup (Local)
+## Environment Setup (Local)
 
 ```
 Download the Ubuntu .deb tarball from the IBM MQ download page.
@@ -46,7 +48,7 @@ strmqm QM1
 echo "DEFINE QLOCAL(DEV.QUEUE.1)" | runmqsc QM1
 ```
 
-## 🔨 Build Instructions
+## Build Instructions
 
 Use the following commands to compile the applications. We include the `./include` directory to ensure the compiler finds the necessary MQ headers.
 
@@ -58,7 +60,7 @@ g++ -I./include main.cpp -L/opt/mqm/lib64 -lmqm_r -o ibmMQ
 g++ -I./include get.cpp -L/opt/mqm/lib64 -lmqm_r -o mq_get
 ```
 
-## 🏃 Local Execution
+## Local Execution
 Before running, ensuring the environment is configured and a Queue Manager is running.
 
 Set Environment Variables:
@@ -80,7 +82,7 @@ Run the Demo:
 ./mq_get     # Gets the message
 ```
 
-## 🤖 CI/CD Pipeline
+## CI/CD Pipeline
 This project uses GitHub Actions to maintain code quality. Every push triggers a workflow that:
 
 Spins up an IBM MQ UBI container.
@@ -93,14 +95,13 @@ Executes a functional test to verify the Put/Get cycle.
 
 ## What I've achieved:
 `Environment Stability:` By vendoring the `.h` files, I have removed the brittle dependency on external downloads.
-
 `Configuration Alignment:` Matched the infrastructure (`QM1`) to the application code.
 
 `Security Orchestration:` Learned how to bypass MQ's connection authentication (`CONNAUTH`) specifically for automated testing environments.
 
 ---
 
-## 🔄 Change Management
+## SPRINTS
 
 1. **proof-of-concept.tar** - CI/CD pipeline is fully functional: it compiles against vendored headers and successfully executes a "Put" and "Get" against a live (containerized) IBM MQ instance.
 2. **async-waiting-feature.tar**- Moving from "one-shot" execution to Asynchronous Waiting. Instead of the consumer checking the queue and immediately quitting if it's empty, we’ll tell it to "hang on the line" for a message to arrive
@@ -115,6 +116,10 @@ Message Received: Hello IBM MQ from Ubuntu 24.04!
 ~/ibmMQ$
 ```
 4. **syncpointing-feature.tar** -  With Syncpointing (Transactions), the message is only truly removed from the queue once the code explicitly says "I'm done" (`MQCMIT`). We must move from "unreliable messaging" to Guaranteed Delivery.
-5. **Latency Tracker & Timestamp - *By comparing those MQ timestamps to the current system time when the message is received, we can calculate exactly how many milliseconds the message spent traveling through the provider.*
-6. **MQBACK** - rollback (coding...)
+5. **Latency-timestamp-cal.tar** - By comparing those MQ timestamps to the current system time when the message is received, we can calculate exactly how many milliseconds the message spent traveling through the provider.*
+6. **Resilience (The Poison Message/BackoutCount logic)** - In a production environment, a **Poison Message** is a message that causes the consumer to fail or crash every time it tries to process it. Without resilience logic, the app will get stuck in an infinite loop: **Get -> Fail -> Rollback -> Get (Same Message) -> Fail...** IBM MQ solves this with the `BackoutCount` field in the `MQMD`.
+   6a. **Poison Message Resilience** - Fault Injector Chaos Engineering Tool `mq_poison` to simulate application-level failures
+   6b. **Dead Letter Queue (DLQ) Routing** - The Consumer detects the Poison Message and moves to DEAD.LETTER.QUEUE 
+   6c. **Message Lifecycle Management** - The janitor tool `mq_clear_dlq` detects the poison message and clear the queue
+7. **MQBACK** - rollback (planned)
 
